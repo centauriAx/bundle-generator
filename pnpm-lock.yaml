@@ -17,9 +17,15 @@ importers:
       '@rhinestone/orchestrator-sdk':
         specifier: 0.2.0-rc.8
         version: 0.2.0-rc.8(viem@2.27.0(typescript@5.8.3))
+      axios:
+        specifier: ^1.4.0
+        version: 1.8.4
       dotenv:
         specifier: ^16.5.0
         version: 16.5.0
+      ntp-time-sync:
+        specifier: ^0.3.1
+        version: 0.3.1
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@22.14.1)(typescript@5.8.3)
@@ -395,6 +401,14 @@ packages:
   mute-stream@2.0.0:
     resolution: {integrity: sha512-WWdIxpyjEn+FhQJQQv9aQAYlHoNVdzIzUySNV1gHUPDSdZJ3yZn7pAAbQcV7B56Mvu881q9FZV+0Vx2xC44VWA==}
     engines: {node: ^18.17.0 || >=20.5.0}
+
+  ntp-packet-parser@0.3.1:
+    resolution: {integrity: sha512-bzg5oAy4zNrsyFkGPBNCG2EY63mTFOVdndWpakePs37oSZgaKe+l9HuVGn9oR4IfYcp0d9vYXVPDY36rW8CwTQ==}
+    engines: {node: ^14 || ^16 || ^18}
+
+  ntp-time-sync@0.3.1:
+    resolution: {integrity: sha512-j0UBn82TPv7zBmhGdFXX15Gu1YO6Fehf3B+2UHSjhltrGjlvWjmQ4W9bKqGCAkLF+B9tn2014mxc9NaCop+WcQ==}
+    engines: {node: ^14 || ^16 || ^18}
 
   os-tmpdir@1.0.2:
     resolution: {integrity: sha512-D2FR03Vir7FIu45XBY20mTb+/ZSWB00sjU9jdQXt83gDrI4Ztz5Fs7/yy74g2N5SVQY4xY1qDr4rNddwYRVX0g==}
@@ -826,6 +840,12 @@ snapshots:
       mime-db: 1.52.0
 
   mute-stream@2.0.0: {}
+
+  ntp-packet-parser@0.3.1: {}
+
+  ntp-time-sync@0.3.1:
+    dependencies:
+      ntp-packet-parser: 0.3.1
 
   os-tmpdir@1.0.2: {}
 

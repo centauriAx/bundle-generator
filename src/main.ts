@@ -26,10 +26,43 @@ import { waitForBundleResult } from "./utils/bundleStatus";
 import { Intent, Token } from "./types";
 import { getChain } from "./utils/chains";
 import { convertTokenAmount } from "./utils/tokens";
+import { NtpTimeSync } from "ntp-time-sync";
+import axios from "axios"
+
+const timeSync = NtpTimeSync.getInstance();
+var ntpOffset:number
+
+
+async function initNTPtimeSync()
+{
+  for(;;)
+  {
+      try{
+      ntpOffset = (await timeSync.getTime(true)).offset ?? 0
+      if(Math.abs(ntpOffset)>5000) 
+          {
+            console.log(`Unusual NTP offset value of ${ntpOffset}. Ignoring.`)
+              ntpOffset = 0
+          }
+      }
+      catch(error)
+      {
+          console.log(`### NTP Sync request failed. Trying again shortly.`)
+      }
+      await new Promise(resolve => setTimeout(resolve, 10000));
+  }
+}
+
+initNTPtimeSync()
+
+export function ntpNow(): number
+{
+    return (Date.now()+(ntpOffset ?? 0))
+}
 
 export function ts()
 {
-  return new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '')
+  return new Date(ntpNow()).toISOString().slice(0, 23).replace('T', ' ');
 }
 
 export const processIntent = async (intent: Intent) => {
@@ -122,7 +155,7 @@ export const processIntent = async (intent: Intent) => {
     targetSmartAccount.account.address,
   );
 
-  console.log(`${ts()} Bundle ${bundleLabel}: Generated ${orderPath[0].orderBundle.nonce}`);
+  console.log(`${ts()} Bundle ${bundleLabel}: Generated. BundleNonce: ${orderPath[0].orderBundle.nonce}`);
 
   orderPath[0].orderBundle.segments[0].witness.execs = [
     ...orderPath[0].injectedExecutions.filter(
@@ -136,7 +169,7 @@ export const processIntent = async (intent: Intent) => {
     owner,
   });
 
-  console.log(`${ts()} Bundle ${bundleLabel}: Signed`);
+  const tsSigned = ntpNow()
 
   // send the signed bundle
   const bundleResults: PostOrderBundleResult =
@@ -150,8 +183,22 @@ export const processIntent = async (intent: Intent) => {
       },
     ]);
 
-    console.log(`${ts()} Bundle ${bundleLabel}: Sent`);
+    const tsSent =ntpNow()
 
+    console.log(`${ts()} Bundle ${bundleLabel}: Sent ${bundleResults[0].bundleId}`);
+
+    var noteString = "🧪 CLI Test Bundle Signed and Sending via orchestrator.postSignedOrderBundle ..."
+
+    var apiUrl = `https://acxix.fillhouse.xyz/api/notepush?ntpUnixTs=${tsSigned}&rsbundleid=${bundleResults[0].bundleId}&sender=bundleGen&noteString=${noteString}`
+  
+    axios.get(apiUrl)
+      .then((response:any) => {
+        console.log(`${ts()} Notepush API Response:`, response.data);
+      })
+      .catch((error:any) => {
+        console.error(`${ts()} Notepush API Error:`, error);
+      });
+  
   const result = await waitForBundleResult({
     bundleResults,
     orchestrator,

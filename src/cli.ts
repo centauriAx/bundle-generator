@@ -131,13 +131,8 @@ export const getReplayParams = async () => {
     return { file, count: data.intentList ? data.intentList.length : 0 };
   });
 
-  const isAll = await select({
-    message: "Do you want to replay all intents?",
-    choices: [
-      { name: "Yes", value: true },
-      { name: "No", value: false },
-    ],
-  });
+  // seems unlikely to ever be useful to run all intents in the library
+  const isAll = false 
 
   let intentsToReplay: string[] = [];
   let totalIntentsSelected = 0;
