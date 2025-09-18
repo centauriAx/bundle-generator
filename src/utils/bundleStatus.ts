@@ -1,11 +1,13 @@
-const { BundleStatus } = require("@rhinestone/orchestrator-sdk");
-import type { PostOrderBundleResult } from "@rhinestone/orchestrator-sdk";
-import { ts } from "../main";
+import {
+  BundleStatus,
+  type PostOrderBundleResult,
+} from "@rhinestone/sdk/orchestrator";
+import { ts } from "../main.js";
 
 export const waitForBundleResult = async ({
   orchestrator,
   bundleResults,
-  bundleLabel = '',
+  bundleLabel = "",
   maxWaitTime = 60000,
 }: {
   orchestrator: any;
@@ -19,12 +21,15 @@ export const waitForBundleResult = async ({
     bundleResults[0].bundleId,
   );
 
-  console.log(`${ts()} Bundle ${bundleLabel ? bundleLabel + ': ' : ''}Pending...`);
+  console.log(
+    `${ts()} Bundle ${bundleLabel ? bundleLabel + ": " : ""}Pending...`,
+  );
 
   // Check again every 2 seconds until the status changes or timeout is reached
   while (
     bundleStatus.status === BundleStatus.PENDING ||
-    bundleStatus.status === BundleStatus.PARTIALLY_COMPLETED
+    bundleStatus.status === BundleStatus.PARTIALLY_COMPLETED ||
+    bundleStatus.status == "PRECONFIRMED"
   ) {
     // Check if we've exceeded the maximum wait time
     if (Date.now() - startTime > maxWaitTime) {

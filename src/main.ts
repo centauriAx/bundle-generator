@@ -1,12 +1,12 @@
-const { getHookAddress } = require("@rhinestone/orchestrator-sdk");
 import {
+  getHookAddress,
   getOrchestrator,
   getTokenAddress,
   type Execution,
   type MetaIntent,
   type PostOrderBundleResult,
   type TokenTransfer,
-} from "@rhinestone/orchestrator-sdk";
+} from "@rhinestone/sdk/orchestrator";
 import {
   Account,
   generatePrivateKey,
@@ -20,12 +20,13 @@ import {
   erc20Abi,
   Hex,
 } from "viem";
-import { deployAccount, getSmartAccount } from "./account";
-import { signOrderBundle } from "./utils/signing";
-import { waitForBundleResult } from "./utils/bundleStatus";
-import { Intent, Token } from "./types";
-import { getChain } from "./utils/chains";
-import { convertTokenAmount } from "./utils/tokens";
+import { deployAccount, getSmartAccount } from "./account.js";
+import { signOrderBundle } from "./utils/signing.js";
+import { waitForBundleResult } from "./utils/bundleStatus.js";
+import { Intent, Token } from "./types.js";
+import { getChain } from "./utils/chains.js";
+import { convertTokenAmount } from "./utils/tokens.js";
+import { fundAccount } from "./funding.js";
 import { NtpTimeSync } from "ntp-time-sync";
 import axios from "axios"
 
@@ -66,7 +67,10 @@ export function ts()
 }
 
 export const processIntent = async (intent: Intent) => {
-  const orchestrator = getOrchestrator(process.env.ORCHESTRATOR_API_KEY!);
+  const orchestrator = getOrchestrator(
+    process.env.ORCHESTRATOR_API_KEY!,
+    process.env.ORCHESTRATOR_API_URL,
+  );
 
   const owner: Account = privateKeyToAccount(
     process.env.OWNER_PRIVATE_KEY! as Hex,
@@ -84,6 +88,12 @@ export const processIntent = async (intent: Intent) => {
     const sourceSmartAccount = await getSmartAccount({
       chain,
       owner,
+    });
+
+    await fundAccount({
+      account: sourceSmartAccount.account.address,
+      sourceChains: intent.sourceChains,
+      sourceTokens: intent.sourceTokens,
     });
 
     await deployAccount({ smartAccount: sourceSmartAccount });
@@ -137,17 +147,24 @@ export const processIntent = async (intent: Intent) => {
   });
 
   const sourceAssetsLabel = intent.sourceChains
-    .map(chain => intent.sourceTokens.map(token => `${chain.slice(0, 3).toLowerCase()}.${token}`).join(', '))
-    .join(' | ');
+    .map((chain) =>
+      intent.sourceTokens
+        .map((token) => `${chain.slice(0, 3).toLowerCase()}.${token}`)
+        .join(", "),
+    )
+    .join(" | ");
 
   const targetAssetsLabel = intent.targetTokens
-    .map(token => `${token.amount} ${intent.targetChain.slice(0, 3).toLowerCase()}.${token.symbol.toLowerCase()}`)
-    .join(', ');
+    .map(
+      (token) =>
+        `${token.amount} ${intent.targetChain.slice(0, 3).toLowerCase()}.${token.symbol.toLowerCase()}`,
+    )
+    .join(", ");
 
   const recipientLabel = intent.tokenRecipient.slice(0, 6);
 
   const bundleLabel = `${sourceAssetsLabel} > ${targetAssetsLabel} to ${recipientLabel}`;
-  
+
   console.log(`${ts()} Bundle ${bundleLabel}: Generating Intent`);
 
   const orderPath = await orchestrator.getOrderPath(
@@ -202,7 +219,7 @@ export const processIntent = async (intent: Intent) => {
   const result = await waitForBundleResult({
     bundleResults,
     orchestrator,
-    bundleLabel
+    bundleLabel,
   });
 
   console.log(`${ts()} Bundle ${bundleLabel}: Result`, result);

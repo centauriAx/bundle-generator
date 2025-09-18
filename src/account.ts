@@ -14,7 +14,7 @@ import {
   slice,
   zeroAddress,
 } from "viem";
-import { getPublicClient } from "./utils/clients";
+import { getPublicClient } from "./utils/clients.js";
 import {
   getOwnableValidator,
   RHINESTONE_ATTESTER_ADDRESS,
@@ -23,7 +23,7 @@ import {
   getHookAddress,
   getSameChainModuleAddress,
   getTargetModuleAddress,
-} from "@rhinestone/orchestrator-sdk";
+} from "@rhinestone/sdk/orchestrator";
 import { privateKeyToAccount } from "viem/accounts";
 
 export const getSmartAccount = async ({
@@ -39,6 +39,16 @@ export const getSmartAccount = async ({
     owners: [owner.address],
     threshold: 1,
   });
+
+  const samechainModuleAddress = process.env.DEV_CONTRACTS
+    ? "0x7e57c096c750b120de3fea6bcbfaab82be7503e8"
+    : getSameChainModuleAddress();
+  const targetModuleAddress = process.env.DEV_CONTRACTS
+    ? "0x7e570e72420ac51f4fb57af8b6d991d0a94d87ba"
+    : getTargetModuleAddress();
+  const hookAddress = process.env.DEV_CONTRACTS
+    ? "0x7e571edd525ecda47bd79605304a8d2037f68a1b"
+    : getHookAddress();
 
   const initializer = encodeFunctionData({
     abi: parseAbi([
@@ -65,21 +75,21 @@ export const getSmartAccount = async ({
           ],
           [
             {
-              module: getSameChainModuleAddress(chain.id),
+              module: samechainModuleAddress,
               initData: "0x",
             },
             {
-              module: getTargetModuleAddress(chain.id),
+              module: targetModuleAddress,
               initData: "0x",
             },
             {
-              module: getHookAddress(chain.id),
+              module: hookAddress,
               initData: "0x",
             },
           ],
           [
             {
-              module: getTargetModuleAddress(chain.id),
+              module: targetModuleAddress,
               initData: encodeAbiParameters(
                 [
                   { name: "selector", type: "bytes4" },
